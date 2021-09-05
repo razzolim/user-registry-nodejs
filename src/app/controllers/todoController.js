@@ -1,4 +1,5 @@
 const express = require('express');
+const status = require('http-status');
 const authMiddleware = require('../middlewares/auth');
 const pool = require('../../database/postgres/postgres');
 
@@ -14,11 +15,11 @@ router.post('/', async (req, res) => {
                 throw err;
             }
             const { id } = result.rows[0];
-            return res.status(201).send({ id, description });
+            return res.status(status.CREATED).send({ id, description });
         });
     } catch (err) {
         console.log(err);
-        return res.status(400).send({ error: 'Failed to create a new TODO.' });
+        return res.status(status.BAD_REQUEST).send({ error: 'Failed to create a new TODO.' });
     }
 });
 
@@ -28,10 +29,10 @@ router.get('/', async (req, res) => {
             if (err) {
                 throw err;
             }
-            return res.status(200).send(result.rows);
+            return res.status(status.OK).send(result.rows);
         });
     } catch (err) {
-        return res.status(400).send({ error: 'Failed to list TODOs.' });
+        return res.status(Status.BAD_REQUEST).send({ error: 'Failed to list TODOs.' });
     }
 });
 

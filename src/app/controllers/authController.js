@@ -2,12 +2,11 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const mailer = require('../../modules/mailer');
+const status = require('http-status');
 
 const authConfig = require('../../config/auth');
-
+const mailer = require('../../modules/mailer');
 const User = require('../models/User');
-const { response } = require('express');
 
 const router = express.Router();
 
@@ -22,7 +21,7 @@ router.post('/register', async (req, res) => {
 
     try {
         if (await User.findOne({ email })) {
-            return res.status(400).send({ error: 'User already exists.' });
+            return res.status(status.BAD_REQUEST).send({ error: 'User already exists.' });
         }
 
         const user = await User.create(req.body);
@@ -34,7 +33,7 @@ router.post('/register', async (req, res) => {
             token: generateToken({ id: user.id })
         });
     } catch (err) {
-        return res.status(400).send({ error: 'Registration failed.' });
+        return res.status(status.BAD_REQUEST).send({ error: 'Registration failed.' });
     }
 });
 
@@ -43,11 +42,11 @@ router.post('/authenticate', async (req, res) => {
 
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-        return res.status(400).send({ error: 'User not found.' });
+        return res.status(status.BAD_REQUEST).send({ error: 'User not found.' });
     }
 
     if (!await bcrypt.compare(password, user.password)) {
-        return res.status(400).send({ error: 'Invalid password.' });
+        return res.status(status.BAD_REQUEST).send({ error: 'Invalid password.' });
     }
 
     user.password = undefined;
@@ -66,7 +65,7 @@ router.post('/forgot_password', async (req, res) => {
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(400).send({ error: 'User not found.' });
+            return res.status(status.BAD_REQUEST).send({ error: 'User not found.' });
         }
 
         const token = crypto.randomBytes(20).toString('hex');
@@ -88,13 +87,13 @@ router.post('/forgot_password', async (req, res) => {
             context: { token },
         }, (err) => {
             if (err) {
-                return res.status(400).send({ error: 'Cannot send forgot password email.' });
+                return res.status(status.BAD_REQUEST).send({ error: 'Cannot send forgot password email.' });
             }
 
             return res.send();
         });
     } catch (err) {
-        res.status(400).send({ error: 'Error on forgot password, try again.' });
+        res.status(status.BAD_REQUEST).send({ error: 'Error on forgot password, try again.' });
     }
 });
 
@@ -106,15 +105,15 @@ router.post('/reset_password', async (req, res) => {
             .select('+passwordResetToken passwordResetExpires');
 
         if (!user) {
-            return res.status(400).send({ error: 'User not found.' });
+            return res.status(status.BAD_REQUEST).send({ error: 'User not found.' });
         }
 
         if (token != user.passwordResetToken) {
-            return res.status(400).send({error: 'Invalid token.'});
+            return res.status(status.BAD_REQUEST).send({error: 'Invalid token.'});
         }
 
         if (new Date() > user.passwordResetExpires) {
-            return res.status(400).send({error: 'Token expired, generate a new one.'});
+            return res.status(status.BAD_REQUEST).send({error: 'Token expired, generate a new one.'});
         }
 
         user.password = password;
@@ -125,7 +124,7 @@ router.post('/reset_password', async (req, res) => {
 
     } catch (err) {
         console.log(err);
-        return res.status(400).send({ error: 'Cannot reset password, try again.' });
+        return res.status(status.BAD_REQUEST).send({ error: 'Cannot reset password, try again.' });
     }
 });
 
